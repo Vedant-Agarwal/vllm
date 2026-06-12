@@ -1,0 +1,23 @@
+name: verify-firered
+on: workflow_dispatch
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - name: Install vLLM (precompiled) + test deps
+        run: |
+          uv venv
+          VLLM_USE_PRECOMPILED=1 uv pip install -e . --torch-backend=cpu
+          uv pip install pytest kaldi-native-fbank tblib pytest-forked
+      - name: FireRed/FunASR initialization tests
+        run: |
+          .venv/bin/python -m pytest \
+            "tests/models/test_initialization.py::test_can_initialize_large_subset[FireRedASR2ForConditionalGeneration]" \
+            "tests/models/test_initialization.py::test_can_initialize_large_subset[FireRedLIDForConditionalGeneration]" \
+            "tests/models/test_initialization.py::test_can_initialize_large_subset[FunASRForConditionalGeneration]" -v
+      - name: FireRed/FunASR processing tests
+        run: |
+          .venv/bin/python -m pytest tests/models/multimodal/processing/test_common.py -k "FireRedASR2 or FireRedLID or Fun-ASR" -v
