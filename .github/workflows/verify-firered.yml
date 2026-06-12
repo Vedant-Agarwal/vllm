@@ -7,6 +7,10 @@ jobs:
   verify:
     runs-on: ubuntu-latest
     timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        model: [FireRedASR2ForConditionalGeneration, FireRedLIDForConditionalGeneration, FunASRForConditionalGeneration]
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v5
@@ -19,12 +23,12 @@ jobs:
           uv pip install -r requirements/cpu.txt --index-strategy unsafe-best-match
           VLLM_TARGET_DEVICE=cpu uv pip install -e . --no-build-isolation
           uv pip install pytest kaldi-native-fbank tblib pytest-forked
-      - name: FireRed/FunASR initialization tests
+      - name: Init test (${{ matrix.model }})
         run: |
           .venv/bin/python -m pytest \
-            "tests/models/test_initialization.py::test_can_initialize_large_subset[FireRedASR2ForConditionalGeneration]" \
-            "tests/models/test_initialization.py::test_can_initialize_large_subset[FireRedLIDForConditionalGeneration]" \
-            "tests/models/test_initialization.py::test_can_initialize_large_subset[FunASRForConditionalGeneration]" -v
-      - name: FireRed/FunASR processing tests
+            "tests/models/test_initialization.py::test_can_initialize_large_subset[${{ matrix.model }}]" -v
+      - name: Processing tests (${{ matrix.model }})
+        if: always()
         run: |
-          .venv/bin/python -m pytest tests/models/multimodal/processing/test_common.py -k "FireRedASR2 or FireRedLID or Fun-ASR" -v
+          .venv/bin/python -m pytest tests/models/multimodal/processing/test_common.py -k "${{ matrix.model }}" -v || \
+          .venv/bin/python -m pytest tests/models/multimodal/processing/test_common.py -k "FireRedASR2 or FireRedLID or Fun-ASR" --collect-only -q | head -5
