@@ -6,14 +6,16 @@ on:
 jobs:
   verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 120
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v5
-      - name: Install vLLM (precompiled) + test deps
+      - name: Build vLLM CPU from source
         run: |
           uv venv
-          VLLM_USE_PRECOMPILED=1 uv pip install -e . --torch-backend=cpu
+          uv pip install setuptools setuptools_rust setuptools_scm wheel ninja cmake packaging
+          uv pip install -r requirements/cpu.txt --index-strategy unsafe-best-match
+          VLLM_TARGET_DEVICE=cpu uv pip install -e . --no-build-isolation
           uv pip install pytest kaldi-native-fbank tblib pytest-forked
       - name: FireRed/FunASR initialization tests
         run: |
