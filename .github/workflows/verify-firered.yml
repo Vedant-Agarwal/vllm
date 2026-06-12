@@ -10,6 +10,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v5
+      - name: Install system deps
+        run: sudo apt-get update -q && sudo apt-get install -y -q libnuma-dev
       - name: Build vLLM CPU from source
         run: |
           uv venv
